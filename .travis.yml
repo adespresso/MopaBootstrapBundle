@@ -2,54 +2,30 @@ language: php
 
 sudo: false
 
-php:
-  - 5.3
-  - 5.4
-  - 5.5
-  - 5.6
-  - 7.0
-  - hhvm
-
-matrix:
-  fast_finish: true
-  include:
-    - php: 5.3
-      env:
-          - COMPOSER_FLAGS="--prefer-lowest"
-          - NO_PHPUNIT_BRIDGE=1
-    - php: 5.4
-      env:
-          - NO_PHPUNIT_BRIDGE=1
-    - php: 5.6
-      env: SYMFONY_VERSION=2.3.*
-    - php: 5.6
-      env:
-          - SYMFONY_VERSION=2.6.*
-          - SYMFONY_DEPRECATIONS_HELPER=weak
-    - php: 5.6
-      env: SYMFONY_VERSION=2.7.*
-    - php: 5.6
-      env: SYMFONY_VERSION=2.8.*
-    - php: 5.6
-      env: SYMFONY_VERSION=3.0.*
-  allow_failures:
-    - php: 7.0
-    - php: hhvm
-    - env: SYMFONY_VERSION=2.8.*
-    - env: SYMFONY_VERSION=3.0.*
-
 cache:
-  directories:
-    - $HOME/.composer/cache
+    directories:
+        - $HOME/.composer/cache/files
 
-before_script:
-  - composer selfupdate
-  - if [ "$SYMFONY_VERSION" != "" ]; then composer require "symfony/symfony:${SYMFONY_VERSION}" --no-update; fi;
-  - if [ "$NO_PHPUNIT_BRIDGE" == "" ]; then composer require symfony/phpunit-bridge; fi;
-  - composer update --prefer-dist $COMPOSER_FLAGS
+php: 7.1
 
 script:
-  - vendor/bin/phpunit
+    - vendor/bin/phpunit -v
+
+notifications:
+    email: false
+
+jobs:
+    include:
+        -
+            name: 'Default installation - PHP 7.1'
+            install:
+                - composer install -n --no-progress
+
+        -
+            name: 'Installation with minimum requirements'
+            install:
+                - phpenv config-rm xdebug.ini
+                - composer update -n --no-progress --prefer-lowest
 
 after_success:
-  - coveralls
+    - coveralls
