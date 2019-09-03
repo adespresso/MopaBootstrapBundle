@@ -1,5 +1,5 @@
 {% extends 'form_div_layout.html.twig' %}
-{% from 'MopaBootstrapBundle::flash.html.twig' import flash %}
+{% from '@MopaBootstrap/flash.html.twig' import flash %}
 
 {# Buttons #}
 {% block button_attributes %}
@@ -379,7 +379,7 @@
 {% block widget_addon %}
 {% spaceless %}
 {# prevent deep nesting wrong context copy error #}
-{% from 'MopaBootstrapBundle::icons.html.twig' import icon %}
+{% from '@MopaBootstrap/icons.html.twig' import icon %}
 <span class="add-on">{{ (widget_addon.text|default(false) ? widget_addon.text|trans({}, translation_domain) : widget_addon.icon|default(false) ? icon(widget_addon.icon) : '' )|raw('html') }} {{ (widget_addon.html|default(false) ? widget_addon.html|raw('html') : '')  }}</span>
 {% endspaceless %}
 {% endblock widget_addon %}
@@ -402,7 +402,7 @@
 {% spaceless %}
 {% if errors_on_forms and form.parent == null %}
     {# prevent deep nesting wrong context copy error #}
-    {% from 'MopaBootstrapBundle::flash.html.twig' import flash %}
+    {% from '@MopaBootstrap/flash.html.twig' import flash %}
     {% for error in errors %}
         {{
             flash(

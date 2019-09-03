@@ -12,7 +12,6 @@ use Mopa\Bundle\BootstrapBundle\Form\Extension\WidgetCollectionFormTypeExtension
 use Mopa\Bundle\BootstrapBundle\Form\Extension\IconButtonExtension;
 use Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapInitializrTwigExtension;
 use Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapTwigExtension;
-use Mopa\Bundle\BootstrapBundle\Tests\FileSystemLoader;
 use Symfony\Bridge\Twig\Extension\FormExtension;
 use Symfony\Bridge\Twig\Extension\TranslationExtension;
 use Symfony\Bridge\Twig\Form\TwigRenderer;
@@ -62,11 +61,13 @@ abstract class AbstractDivLayoutTest extends FormIntegrationTestCase
         $reflection = new \ReflectionClass($renderer);
         $bridgeDirectory = dirname($reflection->getFileName()).'/../Resources/views/Form';
 
-        $loader = new FileSystemLoader(array(
+        $loader = new \Twig_Loader_Filesystem(array(
             $bridgeDirectory,
             __DIR__.'/../../Resources/views/Form',
             __DIR__.'/../../Resources/views',
         ));
+
+        $loader->addPath(__DIR__.'/../../Resources/views', 'MopaBootstrap');
 
         $environment = new Twig_Environment($loader, array('strict_variables' => true));
         $environment->addExtension(new TranslationExtension(new StubTranslator()));

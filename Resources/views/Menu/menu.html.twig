@@ -2,6 +2,6 @@
 
 {% block linkElement %}
 {% import 'knp_menu.html.twig' as macros %}
-{% from 'MopaBootstrapBundle::icons.html.twig' import icon %}
+{% from '@MopaBootstrap/icons.html.twig' import icon %}
 <a href="{{ item.uri }}"{{ macros.attributes(item.linkAttributes) }}>{% if item.extras.icon|default(false) %}{{ icon(item.extras.icon, item.extras.icon_white|default(false)) }}{% endif %}{{ block('label') }}</a>
 {% endblock %}
