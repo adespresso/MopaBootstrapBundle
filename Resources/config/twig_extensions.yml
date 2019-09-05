@@ -5,7 +5,7 @@
 
 services:
    twig.extension.mopa.form:
-       class: 'Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapTwigExtension'
+       class: Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapTwigExtension
        arguments: [ '@service_container' ]
        tags:
           - { name: twig.extension }

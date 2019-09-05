@@ -1,4 +1,4 @@
-{% extends 'MopaBootstrapBundle::base.html.twig' %}
+{% extends '@MopaBootstrap/base.html.twig' %}
 
 {% block html_tag %}
 <!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
@@ -163,7 +163,6 @@
 
     {# removed jQuery from assetic load as it is loaded from Google CDN above #}
     {% javascripts
-        '@MopaBootstrapBundle/Resources/bootstrap/js/bootstrap-tooltip.js'
         '@MopaBootstrapBundle/Resources/bootstrap/js/bootstrap-affix.js'
         '@MopaBootstrapBundle/Resources/bootstrap/js/bootstrap-alert.js'
         '@MopaBootstrapBundle/Resources/bootstrap/js/bootstrap-button.js'
