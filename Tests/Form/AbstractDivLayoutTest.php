@@ -5,11 +5,15 @@ namespace Mopa\Bundle\BootstrapBundle\Tests\Form;
 use Mopa\Bundle\BootstrapBundle\Form\Extension\EmbedFormExtension;
 use Mopa\Bundle\BootstrapBundle\Form\Extension\ErrorTypeFormTypeExtension;
 use Mopa\Bundle\BootstrapBundle\Form\Extension\HelpFormTypeExtension;
-use Mopa\Bundle\BootstrapBundle\Form\Extension\LegendFormTypeExtension;
-use Mopa\Bundle\BootstrapBundle\Form\Extension\TabbedFormTypeExtension;
-use Mopa\Bundle\BootstrapBundle\Form\Extension\WidgetFormTypeExtension;
-use Mopa\Bundle\BootstrapBundle\Form\Extension\WidgetCollectionFormTypeExtension;
 use Mopa\Bundle\BootstrapBundle\Form\Extension\IconButtonExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\LayoutFormTypeExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\LegendFormTypeExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\StaticTextExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\TabbedFormTypeExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\WidgetCollectionFormTypeExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Extension\WidgetFormTypeExtension;
+use Mopa\Bundle\BootstrapBundle\Form\Type\TabType;
+use Mopa\Bundle\BootstrapBundle\Twig\IconExtension;
 use Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapInitializrTwigExtension;
 use Mopa\Bundle\BootstrapBundle\Twig\MopaBootstrapTwigExtension;
 use Symfony\Bridge\Twig\Extension\FormExtension;
@@ -17,10 +21,12 @@ use Symfony\Bridge\Twig\Extension\TranslationExtension;
 use Symfony\Bridge\Twig\Form\TwigRenderer;
 use Symfony\Bridge\Twig\Form\TwigRendererEngine;
 use Symfony\Bridge\Twig\Tests\Extension\Fixtures\StubTranslator;
+use Symfony\Component\Form\FormRenderer;
 use Symfony\Component\Form\Forms;
 use Symfony\Component\Form\FormView;
 use Symfony\Component\Form\PreloadedExtension;
 use Symfony\Component\Form\Test\FormIntegrationTestCase;
+use Symfony\Component\HttpKernel\Kernel;
 use Twig_Environment;
 
 abstract class AbstractDivLayoutTest extends FormIntegrationTestCase
@@ -43,45 +49,68 @@ abstract class AbstractDivLayoutTest extends FormIntegrationTestCase
 
         parent::setUp();
 
-        $rendererEngine = new TwigRendererEngine(array(
-            'form_div_layout.html.twig',
-            'fields.html.twig',
-        ));
-
-        if (interface_exists('Symfony\Component\Security\Csrf\CsrfTokenManagerInterface')) {
-            $csrfProviderInterface = 'Symfony\Component\Security\Csrf\CsrfTokenManagerInterface';
-        } else {
-            $csrfProviderInterface = 'Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfProviderInterface';
-        }
-
-        $renderer = new TwigRenderer($rendererEngine, $this->getMock($csrfProviderInterface));
-
-        $this->extension = new FormExtension($renderer);
-
-        $reflection = new \ReflectionClass($renderer);
+        $reflectionClass = class_exists('Symfony\Bridge\Twig\Form\TwigRenderer') ? 'Symfony\Bridge\Twig\Form\TwigRenderer' : 'Symfony\Bridge\Twig\Form\TwigRendererEngine';
+        $reflection = new \ReflectionClass($reflectionClass);
         $bridgeDirectory = dirname($reflection->getFileName()).'/../Resources/views/Form';
 
-        $loader = new \Twig_Loader_Filesystem(array(
+        $loader = new \Twig_Loader_Filesystem([
             $bridgeDirectory,
             __DIR__.'/../../Resources/views/Form',
-            __DIR__.'/../../Resources/views',
-        ));
+        ]);
 
         $loader->addPath(__DIR__.'/../../Resources/views', 'MopaBootstrap');
 
-        $environment = new Twig_Environment($loader, array('strict_variables' => true));
-        $environment->addExtension(new TranslationExtension(new StubTranslator()));
-        $environment->addExtension(new MopaBootstrapInitializrTwigExtension(array(
-            'mopa_bootstrap.initializr.meta' => null,
-            'mopa_bootstrap.initializr.dns_prefetch' => null,
-            'mopa_bootstrap.initializr.google' => null,
-            'mopa_bootstrap.initializr.diagnostic_mode' => false,
-        )));
-        $environment->addExtension(new MopaBootstrapTwigExtension());
-        $environment->addGlobal('global', '');
-        $environment->addExtension($this->extension);
+        $this->environment = new \Twig_Environment($loader, ['strict_variables' => true]);
+        $this->environment->addExtension(new TranslationExtension(new StubTranslator()));
+        $this->environment->addGlobal('global', '');
 
-        $this->extension->initRuntime($environment);
+        $this->rendererEngine = new TwigRendererEngine([
+            'form_div_layout.html.twig',
+            'fields.html.twig',
+        ], $this->environment);
+
+        if (version_compare(Kernel::VERSION, '3.0.0', '<')) {
+            $this->setUpVersion2();
+        } else {
+            $this->setUpVersion3Plus();
+        }
+    }
+
+    private function setUpVersion2()
+    {
+        $csrfProvider = $this->getMockBuilder('Symfony\Component\Form\Extension\Csrf\CsrfProvider\CsrfProviderInterface')->getMock();
+        $this->renderer = new TwigRenderer($this->rendererEngine, $csrfProvider);
+        $this->environment->addExtension($this->extension = new FormExtension($this->renderer));
+        $this->extension->initRuntime($this->environment);
+    }
+
+    private function setUpVersion3Plus()
+    {
+        $csrfProvider = $this->getMockBuilder('Symfony\Component\Security\Csrf\CsrfTokenManagerInterface')->getMock();
+        $loaders = [
+            'Symfony\Component\Form\FormRenderer' => function () use ($csrfProvider) {
+                return new FormRenderer($this->rendererEngine, $csrfProvider);
+            },
+        ];
+
+        $runtime = 'Symfony\Component\Form\FormRenderer';
+
+        if (class_exists('Symfony\Bridge\Twig\Form\TwigRenderer')) {
+            $loaders['Symfony\Bridge\Twig\Form\TwigRenderer'] = function () use ($csrfProvider) {
+                return new TwigRenderer($this->rendererEngine, $csrfProvider);
+            };
+
+            $runtime = 'Symfony\Bridge\Twig\Form\TwigRenderer';
+        }
+
+        // Add runtime loader
+        $this->environment->addRuntimeLoader(new \Twig_FactoryRuntimeLoader($loaders));
+        $this->renderer = $this->environment->getRuntime($runtime);
+
+        $this->extension = new FormExtension();
+        $this->extension->renderer = $this->renderer;
+
+        $this->environment->addExtension($this->extension);
     }
 
     /**
