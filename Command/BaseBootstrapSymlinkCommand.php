@@ -112,7 +112,6 @@ abstract class BaseBootstrapSymlinkCommand extends ContainerAwareCommand
                     throw new \Exception(static::$pathName . " would resolve to: " . $symlinkTarget . "\n and this is not reachable from \npathToMopaBootstrapBundle: " . dirname($symlinkName));
                 }
             }
-            $dialog = $this->getHelperSet()->get('dialog');
             $text = <<<EOF
 Creating the symlink: $symlinkName
   Pointing to: $symlinkTarget
@@ -123,11 +122,6 @@ EOF
                 $this->getHelperSet()->get('formatter')->formatBlock($text, $style = 'bg=blue;fg=white', true),
                 '',
             ));
-            if ($this->input->isInteractive()) {
-                if (!$dialog->askConfirmation($this->output, '<question>Should this link be created? (y/n)</question>', false)) {
-                    exit;
-                }
-            }
 
             return array($symlinkTarget, $symlinkName);
     }
